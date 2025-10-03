@@ -16,7 +16,7 @@ export class HttpClient {
 
   constructor(config: UnTamperConfig) {
     this.config = {
-      baseUrl: 'https://api.untamper.com',
+      baseUrl: 'https://app.untamper.com',
       timeout: 30000,
       retryAttempts: 3,
       retryDelay: 1000,
