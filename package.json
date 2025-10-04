@@ -36,16 +36,16 @@
     "typescript",
     "enterprise"
   ],
-  "author": "unTamper Team <support@untamper.com>",
+  "author": "unTamper Team <oren@untamper.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/untamper/sdk-node.git"
+    "url": "https://github.com/oyagev/unTamper-sdk-node.git"
   },
   "bugs": {
-    "url": "https://github.com/untamper/sdk-node/issues"
+    "url": "https://github.com/oyagev/unTamper-sdk-node/issues"
   },
-  "homepage": "https://github.com/untamper/sdk-node#readme",
+  "homepage": "https://github.com/oyagev/unTamper-sdk-node#readme",
   "dependencies": {
     "node-fetch": "^2.7.0"
   },
