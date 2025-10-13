@@ -26,4 +26,16 @@ export type {
   QueueStatsResponse,
   QueueManagementResponse,
   ErrorResponse,
+  AuditLog,
+  LogContext,
+  QueryLogsResponse,
+  PaginationMetadata,
+  VerifyLogResponse,
+  VerifyRangeResponse,
+  ChainDetails,
 } from './responses';
+
+export type {
+  QueryLogsOptions,
+  VerifyRangeRequest,
+} from './requests';

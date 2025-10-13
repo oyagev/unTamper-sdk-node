@@ -15,7 +15,7 @@ export class QueueService {
    * Gets queue statistics
    */
   async getQueueStats(): Promise<QueueStatsResponse> {
-    return this.httpClient.get<QueueStatsResponse>('/api/queue');
+    return this.httpClient.get<QueueStatsResponse>('/api/v1/queue');
   }
 
   /**
@@ -23,7 +23,7 @@ export class QueueService {
    */
   async triggerQueueProcessing(): Promise<QueueManagementResponse> {
     const request: QueueManagementRequest = { action: 'process' };
-    return this.httpClient.post<QueueManagementResponse>('/api/queue', request);
+    return this.httpClient.post<QueueManagementResponse>('/api/v1/queue', request);
   }
 
   /**
@@ -31,6 +31,6 @@ export class QueueService {
    */
   async getQueueStatsPost(): Promise<QueueManagementResponse> {
     const request: QueueManagementRequest = { action: 'stats' };
-    return this.httpClient.post<QueueManagementResponse>('/api/queue', request);
+    return this.httpClient.post<QueueManagementResponse>('/api/v1/queue', request);
   }
 }

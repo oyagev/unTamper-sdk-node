@@ -72,3 +72,37 @@ export interface QueueManagementRequest {
   /** The action to perform */
   action: 'process' | 'stats';
 }
+
+/**
+ * Query logs request options
+ */
+export interface QueryLogsOptions {
+  /** Number of logs to return (default: 50) */
+  limit?: number;
+  /** Pagination offset (default: 0) */
+  offset?: number;
+  /** Filter by action (case-insensitive) */
+  action?: string;
+  /** Filter by result */
+  result?: string;
+  /** Filter by actor ID */
+  actorId?: string;
+  /** Filter by actor type */
+  actorType?: string;
+  /** Filter by target ID */
+  targetId?: string;
+  /** Filter by target type */
+  targetType?: string;
+}
+
+/**
+ * Verify range request
+ */
+export interface VerifyRangeRequest {
+  /** Start date for verification range (ISO8601) */
+  startDate?: string;
+  /** End date for verification range (ISO8601) */
+  endDate?: string;
+  /** Maximum number of logs to verify */
+  maxLogs?: number;
+}

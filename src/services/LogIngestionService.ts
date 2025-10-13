@@ -2,7 +2,9 @@ import { HttpClient } from '../client/HttpClient';
 import { 
   LogIngestionRequest, 
   LogIngestionResponse, 
-  IngestionStatusResponse 
+  IngestionStatusResponse,
+  QueryLogsOptions,
+  QueryLogsResponse,
 } from '../types';
 import { validateLogIngestionRequest, validateIngestId } from '../utils/validation';
 
@@ -18,7 +20,7 @@ export class LogIngestionService {
   async ingestLog(request: LogIngestionRequest): Promise<LogIngestionResponse> {
     validateLogIngestionRequest(request);
     
-    return this.httpClient.post<LogIngestionResponse>('/api/ingest', request);
+    return this.httpClient.post<LogIngestionResponse>('/api/v1/ingest', request);
   }
 
   /**
@@ -53,7 +55,7 @@ export class LogIngestionService {
   async checkIngestionStatus(ingestId: string): Promise<IngestionStatusResponse> {
     validateIngestId(ingestId);
     
-    return this.httpClient.get<IngestionStatusResponse>(`/api/ingest?ingestId=${encodeURIComponent(ingestId)}`);
+    return this.httpClient.get<IngestionStatusResponse>(`/api/v1/ingest?ingestId=${encodeURIComponent(ingestId)}`);
   }
 
   /**
@@ -85,5 +87,38 @@ export class LogIngestionService {
     }
     
     throw new Error(`Timeout waiting for ingestion ${ingestId} to complete`);
+  }
+
+  /**
+   * Queries audit logs with optional filters and pagination
+   */
+  async queryLogs(options: QueryLogsOptions = {}): Promise<QueryLogsResponse> {
+    const {
+      limit = 50,
+      offset = 0,
+      action,
+      result,
+      actorId,
+      actorType,
+      targetId,
+      targetType,
+    } = options;
+
+    // Build query parameters
+    const params: Record<string, string> = {
+      limit: limit.toString(),
+      offset: offset.toString(),
+    };
+
+    // Add optional filters
+    if (action) params.action = action;
+    if (result) params.result = result;
+    if (actorId) params.actorId = actorId;
+    if (actorType) params.actorType = actorType;
+    if (targetId) params.targetId = targetId;
+    if (targetType) params.targetType = targetType;
+
+    // Use getWithProject to automatically inject projectId
+    return this.httpClient.getWithProject<QueryLogsResponse>('/api/v1/logs', params);
   }
 }

@@ -126,10 +126,29 @@ export class HttpClient {
     };
     
     if (data) {
-      requestOptions.body = JSON.stringify(data);
+      // Automatically inject projectId into POST request bodies
+      const payload = {
+        projectId: this.config.projectId,
+        ...data,
+      };
+      requestOptions.body = JSON.stringify(payload);
     }
     
     return this.request<T>(endpoint, requestOptions);
+  }
+
+  /**
+   * Makes a GET request with automatic projectId injection in query params
+   */
+  async getWithProject<T>(endpoint: string, params?: Record<string, string>, options: RequestInit = {}): Promise<T> {
+    // Automatically inject projectId into query parameters
+    const queryParams = new URLSearchParams({
+      projectId: this.config.projectId,
+      ...params,
+    });
+    
+    const url = `${endpoint}?${queryParams.toString()}`;
+    return this.request<T>(url, { ...options, method: 'GET' });
   }
 
   /**

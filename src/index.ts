@@ -14,6 +14,15 @@ export type {
   Target,
   Change,
   ActionResult,
+  AuditLog,
+  LogContext,
+  QueryLogsOptions,
+  QueryLogsResponse,
+  PaginationMetadata,
+  VerifyLogResponse,
+  VerifyRangeRequest,
+  VerifyRangeResponse,
+  ChainDetails,
 } from './types';
 
 // Error exports

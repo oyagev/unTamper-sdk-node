@@ -10,6 +10,8 @@ Official Node.js SDK for [unTamper](https://untamper.com) - Enterprise audit log
 
 - 🚀 **Fast & Reliable**: Optimized for high-performance log ingestion
 - 🔒 **Type-Safe**: Full TypeScript support with comprehensive type definitions
+- 🔐 **Cryptographic Verification**: Blockchain-style log verification with hash chaining
+- 🔍 **Query & Filter**: Powerful querying with multiple filters and pagination
 - 🔄 **Auto-Retry**: Built-in retry logic with exponential backoff
 - 🛡️ **Error Handling**: Comprehensive error handling with custom error classes
 - 📦 **Zero Dependencies**: Minimal footprint with no external runtime dependencies
@@ -90,6 +92,8 @@ const client = new UnTamperClient({
 
 Ingests a single audit log.
 
+**Example:**
+
 ```typescript
 const response = await client.logs.ingestLog({
   action: 'document.update',
@@ -151,6 +155,107 @@ const status = await client.logs.waitForCompletion('ingest_123', {
   pollInterval: 1000, // Check every 1 second
   maxWaitTime: 30000, // Wait up to 30 seconds
 });
+```
+
+#### `client.logs.queryLogs(options)`
+
+Queries audit logs with optional filters and pagination.
+
+**Parameters:**
+- `limit` (optional): Number of logs to return (default: 50)
+- `offset` (optional): Pagination offset (default: 0)
+- `action` (optional): Filter by action (case-insensitive)
+- `result` (optional): Filter by result (SUCCESS, FAILURE, DENIED, ERROR)
+- `actorId` (optional): Filter by actor ID
+- `actorType` (optional): Filter by actor type
+- `targetId` (optional): Filter by target ID
+- `targetType` (optional): Filter by target type
+
+**Example:**
+
+```typescript
+// Query all logs
+const allLogs = await client.logs.queryLogs();
+
+// Query with filters
+const failedLogins = await client.logs.queryLogs({
+  action: 'user.login',
+  result: 'FAILURE',
+  limit: 10,
+});
+
+// Query by actor
+const userActions = await client.logs.queryLogs({
+  actorId: 'user_123',
+  actorType: 'user',
+});
+
+// Pagination
+const page2 = await client.logs.queryLogs({
+  limit: 50,
+  offset: 50,
+});
+
+console.log('Logs:', allLogs.logs);
+console.log('Total:', allLogs.pagination.total);
+console.log('Has more:', allLogs.pagination.hasMore);
+```
+
+### Log Verification
+
+#### `client.verification.verifyLog(logId, verifyChain, depth)`
+
+Verifies the cryptographic integrity of a single log.
+
+**Parameters:**
+- `logId` (required): The ID of the log to verify
+- `verifyChain` (optional): If true, verify chain integrity (default: false)
+- `depth` (optional): Number of logs to verify in chain (default: 10, max: 100)
+
+**Example:**
+
+```typescript
+// Verify single log
+const verification = await client.verification.verifyLog('log_abc123');
+console.log('Valid:', verification.valid);
+console.log('Hash:', verification.hash);
+
+// Verify with chain validation (blockchain-style)
+const chainVerification = await client.verification.verifyLog('log_abc123', true, 20);
+console.log('Chain valid:', chainVerification.chainValid);
+console.log('Total verified:', chainVerification.chainDetails?.totalLogsVerified);
+console.log('Valid logs:', chainVerification.chainDetails?.validLogs);
+console.log('Invalid logs:', chainVerification.chainDetails?.invalidLogs);
+```
+
+#### `client.verification.verifyRange(options)`
+
+Verifies the integrity of logs in a date range.
+
+**Parameters:**
+- `startDate` (optional): Start date for verification range (ISO8601)
+- `endDate` (optional): End date for verification range (ISO8601)
+- `maxLogs` (optional): Maximum number of logs to verify (default: 100)
+
+**Example:**
+
+```typescript
+// Verify all logs (up to maxLogs)
+const fullVerification = await client.verification.verifyRange();
+
+// Verify logs in date range
+const rangeVerification = await client.verification.verifyRange({
+  startDate: '2024-01-01T00:00:00Z',
+  endDate: '2024-01-31T23:59:59Z',
+  maxLogs: 1000,
+});
+
+console.log('Summary:', rangeVerification.summary);
+console.log('Total checked:', rangeVerification.total);
+console.log('Valid:', rangeVerification.valid);
+console.log('Invalid:', rangeVerification.invalid);
+console.log('Chain valid:', rangeVerification.chainValid);
+console.log('Errors:', rangeVerification.errors);
 ```
 
 ### Queue Management
@@ -222,6 +327,9 @@ import {
   Actor,
   Target,
   ActionResult,
+  AuditLog,
+  QueryLogsResponse,
+  VerifyLogResponse,
 } from '@untamper/sdk-node';
 
 const request: LogIngestionRequest = {
@@ -233,9 +341,82 @@ const request: LogIngestionRequest = {
   },
   result: 'SUCCESS' as ActionResult,
 };
+
+// Type-safe responses
+const response: LogIngestionResponse = await client.logs.ingestLog(request);
+const logs: QueryLogsResponse = await client.logs.queryLogs();
+const verification: VerifyLogResponse = await client.verification.verifyLog('log_123');
 ```
 
 ## Examples
+
+### Complete Workflow: Ingest → Query → Verify
+
+```typescript
+import { UnTamperClient } from '@untamper/sdk-node';
+
+const client = new UnTamperClient({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
+});
+
+async function completeAuditWorkflow() {
+  // 1. Ingest an audit log
+  const ingestResponse = await client.logs.ingestLog({
+    action: 'user.login',
+    actor: {
+      id: 'user_123',
+      type: 'user',
+      display_name: 'John Doe',
+    },
+    result: 'SUCCESS',
+    context: {
+      request_id: 'req_abc123',
+      session_id: 'sess_xyz789',
+    },
+    metadata: {
+      ip_address: '192.168.1.1',
+      user_agent: 'Mozilla/5.0...',
+    },
+  });
+  
+  console.log('Log ingested:', ingestResponse.data?.ingestId);
+  
+  // 2. Wait for processing to complete
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // 3. Query logs to find the ingested log
+  const queryResponse = await client.logs.queryLogs({
+    action: 'user.login',
+    actorId: 'user_123',
+    limit: 1,
+  });
+  
+  const log = queryResponse.logs[0];
+  console.log('Found log:', log.id);
+  console.log('Sequence number:', log.sequenceNumber);
+  console.log('Hash:', log.hash);
+  console.log('Previous hash:', log.previousHash);
+  
+  // 4. Verify the log's cryptographic integrity
+  const verification = await client.verification.verifyLog(log.id, true, 10);
+  console.log('Log is valid:', verification.valid);
+  console.log('Chain is valid:', verification.chainValid);
+  console.log('Logs verified in chain:', verification.chainDetails?.totalLogsVerified);
+  
+  // 5. Verify range of logs
+  const rangeVerification = await client.verification.verifyRange({
+    maxLogs: 100,
+  });
+  
+  console.log('Range verification:', rangeVerification.summary);
+  console.log('Total logs checked:', rangeVerification.total);
+  console.log('All valid:', rangeVerification.valid === rangeVerification.total);
+  console.log('Chain integrity:', rangeVerification.chainValid);
+}
+
+completeAuditWorkflow().catch(console.error);
+```
 
 ### Express.js Middleware
 
