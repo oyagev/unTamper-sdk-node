@@ -152,6 +152,62 @@ export class HttpClient {
   }
 
   /**
+   * Makes a GET request that returns plain text (not JSON)
+   */
+  async getText(endpoint: string, options: RequestInit = {}): Promise<string> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    const requestOptions: RequestInit = {
+      ...options,
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.config.apiKey}`,
+        'User-Agent': '@untamper/sdk-node/1.0.0',
+        ...options.headers,
+      },
+    };
+
+    // Add timeout using AbortController for Node.js 16+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+    requestOptions.signal = controller.signal;
+
+    try {
+      const response = await fetch(url, requestOptions as any);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const error = createErrorFromResponse(
+          response.status,
+          { error: errorText } as any
+        );
+        throw error;
+      }
+
+      return await response.text();
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof UnTamperError) {
+        throw error;
+      }
+
+      // Handle network errors
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new NetworkError('Request timeout', { timeout: this.config.timeout });
+        }
+        
+        const networkError = createNetworkError(error);
+        throw networkError;
+      }
+
+      throw new UnTamperError('Unknown error occurred', 'UNKNOWN_ERROR');
+    }
+  }
+
+  /**
    * Determines if a request should be retried
    */
   private shouldRetry(statusCode: number, retryCount: number): boolean {

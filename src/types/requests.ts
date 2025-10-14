@@ -95,14 +95,3 @@ export interface QueryLogsOptions {
   targetType?: string;
 }
 
-/**
- * Verify range request
- */
-export interface VerifyRangeRequest {
-  /** Start date for verification range (ISO8601) */
-  startDate?: string;
-  /** End date for verification range (ISO8601) */
-  endDate?: string;
-  /** Maximum number of logs to verify */
-  maxLogs?: number;
-}

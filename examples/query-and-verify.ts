@@ -11,6 +11,10 @@ async function queryAndVerifyExample() {
   });
 
   try {
+    // Initialize client (fetch public key for verification)
+    console.log('Initializing client...');
+    await client.initialize();
+    console.log('✓ Client initialized\n');
     console.log('=== Query Logs Example ===\n');
 
     // Query all logs with pagination
@@ -43,35 +47,45 @@ async function queryAndVerifyExample() {
       console.log(`  Previous Hash: ${log.previousHash?.substring(0, 20) || 'null'}...`);
       console.log(`  Actor: ${log.actor.display_name || log.actor.id} (${log.actor.type})`);
 
-      console.log('\n=== Verify Log Example ===\n');
+      console.log('\n=== Client-Side Verification Example ===\n');
 
-      // Verify single log
-      const verification = await client.verification.verifyLog(log.id);
+      // Verify single log using client-side verification
+      const verification = await client.verification.verifyLog(log);
       console.log(`Log ${log.id} is valid: ${verification.valid}`);
-      console.log(`Hash: ${verification.hash.substring(0, 40)}...`);
-      console.log(`Verified at: ${verification.verifiedAt}`);
+      console.log(`Hash valid: ${verification.hashValid}`);
+      console.log(`Signature valid: ${verification.signatureValid}`);
+      if (verification.error) {
+        console.log(`Error: ${verification.error}`);
+      }
 
-      // Verify with chain validation
+      // Verify multiple logs with chain validation
       console.log('\n=== Chain Verification Example ===\n');
-      const chainVerification = await client.verification.verifyLog(log.id, true, 10);
-      console.log(`Chain validation: ${chainVerification.chainValid}`);
-      console.log(`Total logs verified: ${chainVerification.chainDetails?.totalLogsVerified}`);
-      console.log(`Valid logs: ${chainVerification.chainDetails?.validLogs}`);
-      console.log(`Invalid logs: ${chainVerification.chainDetails?.invalidLogs}`);
+      const chainVerification = await client.verification.verifyLogs([log]);
+      console.log(`Chain validation: ${chainVerification.valid}`);
+      console.log(`Total logs verified: ${chainVerification.totalLogs}`);
+      console.log(`Valid logs: ${chainVerification.validLogs}`);
+      console.log(`Invalid logs: ${chainVerification.invalidLogs}`);
+      if (chainVerification.errors.length > 0) {
+        console.log(`Errors: ${JSON.stringify(chainVerification.errors, null, 2)}`);
+      }
     }
 
-    // Verify range
-    console.log('\n=== Range Verification Example ===\n');
-    const rangeVerification = await client.verification.verifyRange({
-      maxLogs: 100,
-    });
-
-    console.log(`Summary: ${rangeVerification.summary}`);
-    console.log(`Total checked: ${rangeVerification.total}`);
-    console.log(`Valid: ${rangeVerification.valid}`);
-    console.log(`Invalid: ${rangeVerification.invalid}`);
-    console.log(`Chain valid: ${rangeVerification.chainValid}`);
-    console.log(`Sequence range: ${rangeVerification.sequenceRange.from} - ${rangeVerification.sequenceRange.to}`);
+    // Verify multiple logs with chain validation
+    console.log('\n=== Multiple Logs Chain Verification Example ===\n');
+    const multipleLogs = await client.logs.queryLogs({ limit: 5 });
+    if (multipleLogs.logs.length > 0) {
+      const chainVerification = await client.verification.verifyLogs(multipleLogs.logs);
+      console.log(`Chain validation: ${chainVerification.valid}`);
+      console.log(`Total logs checked: ${chainVerification.totalLogs}`);
+      console.log(`Valid: ${chainVerification.validLogs}`);
+      console.log(`Invalid: ${chainVerification.invalidLogs}`);
+      if (chainVerification.brokenAt) {
+        console.log(`Chain broken at sequence: ${chainVerification.brokenAt}`);
+      }
+      if (chainVerification.errors.length > 0) {
+        console.log(`Errors: ${JSON.stringify(chainVerification.errors, null, 2)}`);
+      }
+    }
 
     // Query by actor
     console.log('\n=== Query by Actor Example ===\n');

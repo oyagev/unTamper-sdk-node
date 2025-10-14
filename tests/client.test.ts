@@ -39,7 +39,7 @@ describe('UnTamperClient', () => {
       });
 
       const config = client.getConfig();
-      expect(config.baseUrl).toBe('https://api.untamper.com');
+      expect(config.baseUrl).toBe('https://app.untamper.com');
       expect(config.timeout).toBe(30000);
       expect(config.retryAttempts).toBe(3);
       expect(config.retryDelay).toBe(1000);

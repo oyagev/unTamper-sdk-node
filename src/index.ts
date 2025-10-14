@@ -19,10 +19,8 @@ export type {
   QueryLogsOptions,
   QueryLogsResponse,
   PaginationMetadata,
-  VerifyLogResponse,
-  VerifyRangeRequest,
-  VerifyRangeResponse,
-  ChainDetails,
+  VerifyLogResult,
+  ChainVerificationResult,
 } from './types';
 
 // Error exports
@@ -35,6 +33,12 @@ export {
   ServerError,
   ConfigurationError,
 } from './utils/errors';
+
+// Crypto utility exports
+export {
+  computeLogHash,
+  verifyECDSASignature,
+} from './utils/crypto';
 
 // Default export
 export { UnTamperClient as default } from './client/UnTamperClient';

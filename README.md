@@ -203,60 +203,98 @@ console.log('Has more:', allLogs.pagination.hasMore);
 
 ### Log Verification
 
-#### `client.verification.verifyLog(logId, verifyChain, depth)`
+**Important**: All verification is done **client-side** for maximum security. This means you can verify logs without trusting the server, ensuring true cryptographic integrity.
 
-Verifies the cryptographic integrity of a single log.
+#### `client.initialize()`
+
+Initializes the client by fetching the ECDSA public key for verification. This must be called before any verification operations.
+
+```typescript
+// Initialize client (fetch public key)
+await client.initialize();
+```
+
+#### `client.verification.verifyLog(log)`
+
+Verifies the cryptographic integrity of a single log using client-side verification.
 
 **Parameters:**
-- `logId` (required): The ID of the log to verify
-- `verifyChain` (optional): If true, verify chain integrity (default: false)
-- `depth` (optional): Number of logs to verify in chain (default: 10, max: 100)
+- `log` (required): The AuditLog object to verify
 
 **Example:**
 
 ```typescript
+// First, initialize the client
+await client.initialize();
+
+// Query logs
+const logs = await client.logs.queryLogs({ limit: 1 });
+const log = logs.logs[0];
+
 // Verify single log
-const verification = await client.verification.verifyLog('log_abc123');
+const verification = await client.verification.verifyLog(log);
 console.log('Valid:', verification.valid);
-console.log('Hash:', verification.hash);
+console.log('Hash valid:', verification.hashValid);
+console.log('Signature valid:', verification.signatureValid);
+if (verification.error) {
+  console.log('Error:', verification.error);
+}
+```
+
+#### `client.verification.verifyLogs(logs)`
+
+Verifies multiple logs with blockchain-style chain validation.
+
+**Parameters:**
+- `logs` (required): Array of AuditLog objects to verify
+
+**Example:**
+
+```typescript
+// First, initialize the client
+await client.initialize();
+
+// Query multiple logs
+const logs = await client.logs.queryLogs({ limit: 10 });
 
 // Verify with chain validation (blockchain-style)
-const chainVerification = await client.verification.verifyLog('log_abc123', true, 20);
-console.log('Chain valid:', chainVerification.chainValid);
-console.log('Total verified:', chainVerification.chainDetails?.totalLogsVerified);
-console.log('Valid logs:', chainVerification.chainDetails?.validLogs);
-console.log('Invalid logs:', chainVerification.chainDetails?.invalidLogs);
+const chainVerification = await client.verification.verifyLogs(logs.logs);
+console.log('Chain valid:', chainVerification.valid);
+console.log('Total logs:', chainVerification.totalLogs);
+console.log('Valid logs:', chainVerification.validLogs);
+console.log('Invalid logs:', chainVerification.invalidLogs);
+if (chainVerification.brokenAt) {
+  console.log('Chain broken at sequence:', chainVerification.brokenAt);
+}
+if (chainVerification.errors.length > 0) {
+  console.log('Errors:', chainVerification.errors);
+}
 ```
 
-#### `client.verification.verifyRange(options)`
+#### Why Client-Side Verification?
 
-Verifies the integrity of logs in a date range.
+- ✅ **Trustless**: Verify without trusting the server
+- ✅ **Offline**: Verify logs without API calls (after fetching public key)
+- ✅ **Independent**: Third parties can verify logs
+- ✅ **Tamper-proof**: Mathematical proof of integrity using ECDSA signatures
+- ✅ **Blockchain-style**: Hash chaining detects any tampering in the sequence
+- ✅ **Deterministic**: Consistent hashing regardless of object property order
 
-**Parameters:**
-- `startDate` (optional): Start date for verification range (ISO8601)
-- `endDate` (optional): End date for verification range (ISO8601)
-- `maxLogs` (optional): Maximum number of logs to verify (default: 100)
+### Crypto Utilities
 
-**Example:**
+The SDK also exports cryptographic utilities for advanced use cases:
 
 ```typescript
-// Verify all logs (up to maxLogs)
-const fullVerification = await client.verification.verifyRange();
+import { computeLogHash, verifyECDSASignature } from '@untamper/sdk-node';
 
-// Verify logs in date range
-const rangeVerification = await client.verification.verifyRange({
-  startDate: '2024-01-01T00:00:00Z',
-  endDate: '2024-01-31T23:59:59Z',
-  maxLogs: 1000,
-});
+// Compute hash for any audit log
+const hash = computeLogHash(auditLog);
 
-console.log('Summary:', rangeVerification.summary);
-console.log('Total checked:', rangeVerification.total);
-console.log('Valid:', rangeVerification.valid);
-console.log('Invalid:', rangeVerification.invalid);
-console.log('Chain valid:', rangeVerification.chainValid);
-console.log('Errors:', rangeVerification.errors);
+// Verify ECDSA signature
+const isValid = verifyECDSASignature(hash, signature, publicKey);
 ```
+
+**Note**: The `computeLogHash` function uses deterministic JSON stringification, ensuring consistent hashes regardless of object property order.
 
 ### Queue Management
 
@@ -361,6 +399,9 @@ const client = new UnTamperClient({
 });
 
 async function completeAuditWorkflow() {
+  // Initialize client (fetch public key for verification)
+  await client.initialize();
+  
   // 1. Ingest an audit log
   const ingestResponse = await client.logs.ingestLog({
     action: 'user.login',
@@ -398,21 +439,20 @@ async function completeAuditWorkflow() {
   console.log('Hash:', log.hash);
   console.log('Previous hash:', log.previousHash);
   
-  // 4. Verify the log's cryptographic integrity
-  const verification = await client.verification.verifyLog(log.id, true, 10);
+  // 4. Verify the log's cryptographic integrity (client-side)
+  const verification = await client.verification.verifyLog(log);
   console.log('Log is valid:', verification.valid);
-  console.log('Chain is valid:', verification.chainValid);
-  console.log('Logs verified in chain:', verification.chainDetails?.totalLogsVerified);
+  console.log('Hash valid:', verification.hashValid);
+  console.log('Signature valid:', verification.signatureValid);
   
-  // 5. Verify range of logs
-  const rangeVerification = await client.verification.verifyRange({
-    maxLogs: 100,
-  });
+  // 5. Verify multiple logs with chain validation
+  const multipleLogs = await client.logs.queryLogs({ limit: 10 });
+  const chainVerification = await client.verification.verifyLogs(multipleLogs.logs);
   
-  console.log('Range verification:', rangeVerification.summary);
-  console.log('Total logs checked:', rangeVerification.total);
-  console.log('All valid:', rangeVerification.valid === rangeVerification.total);
-  console.log('Chain integrity:', rangeVerification.chainValid);
+  console.log('Chain verification:', chainVerification.valid);
+  console.log('Total logs checked:', chainVerification.totalLogs);
+  console.log('All valid:', chainVerification.validLogs === chainVerification.totalLogs);
+  console.log('Chain integrity:', chainVerification.valid);
 }
 
 completeAuditWorkflow().catch(console.error);

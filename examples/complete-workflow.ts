@@ -12,6 +12,10 @@ async function completeWorkflow() {
   });
 
   try {
+    // Initialize client (fetch public key for verification)
+    console.log('Initializing client...');
+    await client.initialize();
+    console.log('✓ Client initialized\n');
     console.log('=== Complete Audit Log Workflow ===\n');
 
     // Step 1: Ingest an audit log
@@ -88,37 +92,50 @@ async function completeWorkflow() {
     console.log(`  Target: ${log.target?.display_name} (${log.target?.id})`);
     console.log(`  Changes: ${log.changes.length} change(s)\n`);
 
-    // Step 4: Verify single log
-    console.log('Step 4: Verifying log integrity...');
-    const verification = await client.verification.verifyLog(log.id);
+    // Step 4: Verify single log using client-side verification
+    console.log('Step 4: Verifying log integrity (client-side)...');
+    const verification = await client.verification.verifyLog(log);
     console.log(`✓ Log verification: ${verification.valid ? 'VALID' : 'INVALID'}`);
-    console.log(`  Hash matches: ${verification.hash === log.hash}`);
-    console.log(`  Signature: ${verification.signature.substring(0, 40)}...`);
-    console.log(`  Verified at: ${verification.verifiedAt}\n`);
+    console.log(`  Hash valid: ${verification.hashValid}`);
+    console.log(`  Signature valid: ${verification.signatureValid}`);
+    if (verification.error) {
+      console.log(`  Error: ${verification.error}`);
+    }
+    console.log('');
 
-    // Step 5: Verify chain integrity
+    // Step 5: Verify chain integrity (blockchain-style)
     console.log('Step 5: Verifying chain integrity (blockchain-style)...');
-    const chainVerification = await client.verification.verifyLog(log.id, true, 20);
-    console.log(`✓ Chain verification: ${chainVerification.chainValid ? 'VALID' : 'INVALID'}`);
-    console.log(`  Total logs verified: ${chainVerification.chainDetails?.totalLogsVerified}`);
-    console.log(`  Valid logs: ${chainVerification.chainDetails?.validLogs}`);
-    console.log(`  Invalid logs: ${chainVerification.chainDetails?.invalidLogs}`);
-    console.log(`  Chain is immutable: ${chainVerification.chainValid ? 'YES' : 'NO'}\n`);
+    const chainVerification = await client.verification.verifyLogs([log]);
+    console.log(`✓ Chain verification: ${chainVerification.valid ? 'VALID' : 'INVALID'}`);
+    console.log(`  Total logs verified: ${chainVerification.totalLogs}`);
+    console.log(`  Valid logs: ${chainVerification.validLogs}`);
+    console.log(`  Invalid logs: ${chainVerification.invalidLogs}`);
+    console.log(`  Chain is immutable: ${chainVerification.valid ? 'YES' : 'NO'}`);
+    if (chainVerification.brokenAt) {
+      console.log(`  Chain broken at sequence: ${chainVerification.brokenAt}`);
+    }
+    console.log('');
 
-    // Step 6: Verify range
-    console.log('Step 6: Verifying range of logs...');
-    const rangeVerification = await client.verification.verifyRange({
-      maxLogs: 100,
-    });
-
-    console.log(`✓ Range verification complete`);
-    console.log(`  Summary: ${rangeVerification.summary}`);
-    console.log(`  Total logs checked: ${rangeVerification.total}`);
-    console.log(`  Valid: ${rangeVerification.valid}`);
-    console.log(`  Invalid: ${rangeVerification.invalid}`);
-    console.log(`  Chain valid: ${rangeVerification.chainValid}`);
-    console.log(`  Sequence range: ${rangeVerification.sequenceRange.from} - ${rangeVerification.sequenceRange.to}`);
-    console.log(`  Date range: ${rangeVerification.dateRange.from} to ${rangeVerification.dateRange.to}\n`);
+    // Step 6: Verify multiple logs with chain validation
+    console.log('Step 6: Verifying multiple logs with chain validation...');
+    const multipleLogs = await client.logs.queryLogs({ limit: 10 });
+    if (multipleLogs.logs.length > 0) {
+      const rangeVerification = await client.verification.verifyLogs(multipleLogs.logs);
+      console.log(`✓ Range verification completed`);
+      console.log(`  Total logs checked: ${rangeVerification.totalLogs}`);
+      console.log(`  Valid: ${rangeVerification.validLogs}`);
+      console.log(`  Invalid: ${rangeVerification.invalidLogs}`);
+      console.log(`  Chain valid: ${rangeVerification.valid}`);
+      if (rangeVerification.brokenAt) {
+        console.log(`  Chain broken at sequence: ${rangeVerification.brokenAt}`);
+      }
+      if (rangeVerification.errors.length > 0) {
+        console.log(`  Errors found: ${rangeVerification.errors.length}`);
+      }
+    } else {
+      console.log('  No logs found to verify');
+    }
+    console.log('');
 
     // Step 7: Query with pagination
     console.log('Step 7: Demonstrating pagination...');

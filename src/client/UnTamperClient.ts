@@ -31,6 +31,18 @@ export class UnTamperClient {
   }
 
   /**
+   * Initializes the client by fetching the public key for verification
+   * 
+   * This method should be called before performing any verification operations.
+   * It's safe to call multiple times - the public key will only be fetched once.
+   * 
+   * @returns Promise that resolves when initialization is complete
+   */
+  async initialize(): Promise<void> {
+    await this.verification.initialize();
+  }
+
+  /**
    * Gets the current configuration (without sensitive data)
    */
   getConfig(): Omit<UnTamperConfig, 'apiKey'> {

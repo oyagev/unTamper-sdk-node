@@ -166,7 +166,7 @@ export interface AuditLog {
   hash: string;
   /** Hash of previous log (chain link) */
   previousHash: string | null;
-  /** HMAC signature of hash */
+  /** ECDSA signature of hash */
   signature: string;
   /** Sequential counter per project */
   sequenceNumber: number;
@@ -197,80 +197,33 @@ export interface QueryLogsResponse {
 }
 
 /**
- * Chain verification details
+ * Client-side verification result for a single log
  */
-export interface ChainDetails {
-  /** Total number of logs verified in chain */
-  totalLogsVerified: number;
+export interface VerifyLogResult {
+  /** Whether the log is valid */
+  valid: boolean;
+  /** Whether the hash computation is valid */
+  hashValid: boolean;
+  /** Whether the ECDSA signature is valid */
+  signatureValid: boolean;
+  /** Error message if verification failed */
+  error?: string;
+}
+
+/**
+ * Client-side chain verification result
+ */
+export interface ChainVerificationResult {
+  /** Whether the entire chain is valid */
+  valid: boolean;
+  /** Total number of logs in the chain */
+  totalLogs: number;
   /** Number of valid logs */
   validLogs: number;
   /** Number of invalid logs */
   invalidLogs: number;
-}
-
-/**
- * Verify log response
- */
-export interface VerifyLogResponse {
-  /** Whether the log is valid */
-  valid: boolean;
-  /** Log ID that was verified */
-  logId: string;
-  /** SHA-256 hash of the log */
-  hash: string;
-  /** HMAC signature */
-  signature: string;
-  /** Sequence number */
-  sequenceNumber: number;
-  /** Previous log's hash */
-  previousHash: string | null;
-  /** Whether the chain is valid (if chain verification was requested) */
-  chainValid?: boolean;
-  /** Chain verification details (if chain verification was requested) */
-  chainDetails?: ChainDetails;
-  /** When the verification was performed */
-  verifiedAt: string;
-}
-
-/**
- * Verify range response
- */
-export interface VerifyRangeResponse {
-  /** Summary message */
-  summary: string;
-  /** Total number of logs checked */
-  total: number;
-  /** Number of valid logs */
-  valid: number;
-  /** Number of invalid logs */
-  invalid: number;
-  /** Whether the entire chain is valid */
-  chainValid: boolean;
-  /** Chain verification details */
-  chainDetails: {
-    /** Total logs in chain */
-    totalLogsInChain: number;
-    /** Valid logs in chain */
-    validInChain: number;
-    /** Invalid logs in chain */
-    invalidInChain: number;
-  };
-  /** Any errors encountered */
-  errors: any[];
-  /** Date range that was verified */
-  dateRange: {
-    /** Start date */
-    from: string;
-    /** End date */
-    to: string;
-  };
-  /** Sequence range that was verified */
-  sequenceRange: {
-    /** First sequence number */
-    from: number;
-    /** Last sequence number */
-    to: number;
-  };
-  /** When the verification was performed */
-  verifiedAt: string;
+  /** Sequence number where chain breaks (if any) */
+  brokenAt?: number;
+  /** Array of verification errors */
+  errors: Array<{ sequenceNumber: number; error: string }>;
 }

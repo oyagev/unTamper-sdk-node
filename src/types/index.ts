@@ -30,12 +30,10 @@ export type {
   LogContext,
   QueryLogsResponse,
   PaginationMetadata,
-  VerifyLogResponse,
-  VerifyRangeResponse,
-  ChainDetails,
+  VerifyLogResult,
+  ChainVerificationResult,
 } from './responses';
 
 export type {
   QueryLogsOptions,
-  VerifyRangeRequest,
 } from './requests';
