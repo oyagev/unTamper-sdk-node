@@ -7,8 +7,6 @@ export type {
   LogIngestionRequest,
   LogIngestionResponse,
   IngestionStatusResponse,
-  QueueStatsResponse,
-  QueueManagementResponse,
   ErrorResponse,
   Actor,
   Target,

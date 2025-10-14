@@ -90,6 +90,37 @@ export class LogIngestionService {
   }
 
   /**
+   * Performs a health check on the ingestion API
+   * 
+   * This endpoint does not require authentication and can be used to verify
+   * that the unTamper API is available and responding.
+   * 
+   * @returns Promise that resolves to health check response
+   */
+  async healthCheck(): Promise<{
+    success: boolean;
+    message: string;
+    version: string;
+    timestamp: string;
+  }> {
+    // Health check doesn't require authentication
+    const response = await fetch(`${this.httpClient['baseUrl']}/api/v1/ingest`);
+    
+    if (!response.ok) {
+      throw new Error(`Health check failed: HTTP ${response.status}`);
+    }
+    
+    const data = await response.json() as {
+      success: boolean;
+      message: string;
+      version: string;
+      timestamp: string;
+    };
+    
+    return data;
+  }
+
+  /**
    * Queries audit logs with optional filters and pagination
    */
   async queryLogs(options: QueryLogsOptions = {}): Promise<QueryLogsResponse> {

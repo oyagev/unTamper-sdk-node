@@ -2,7 +2,6 @@ import { UnTamperConfig, DEFAULT_CONFIG } from '../types/config';
 import { validateConfig } from '../utils/validation';
 import { HttpClient } from './HttpClient';
 import { LogIngestionService } from '../services/LogIngestionService';
-import { QueueService } from '../services/QueueService';
 import { VerificationService } from '../services/VerificationService';
 
 /**
@@ -11,7 +10,6 @@ import { VerificationService } from '../services/VerificationService';
 export class UnTamperClient {
   private readonly httpClient: HttpClient;
   public readonly logs: LogIngestionService;
-  public readonly queue: QueueService;
   public readonly verification: VerificationService;
 
   constructor(config: UnTamperConfig) {
@@ -26,7 +24,6 @@ export class UnTamperClient {
 
     // Initialize services
     this.logs = new LogIngestionService(this.httpClient);
-    this.queue = new QueueService(this.httpClient);
     this.verification = new VerificationService(this.httpClient);
   }
 

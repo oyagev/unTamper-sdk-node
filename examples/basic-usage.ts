@@ -1,16 +1,25 @@
-import { UnTamperClient } from '@untamper/sdk-node';
+import { UnTamperClient } from '../src';
 
 // Initialize the client
 const client = new UnTamperClient({
-  projectId: 'your-project-id',
-  apiKey: 'your-api-key',
+  projectId: 'cmftkqjck000h11q9jwni72n9',
+  apiKey: 'al_0636290704f80bf4dbdd61bf300767d2b7b83d891e0ab7fab87f8203dde7902d',
   // For development, you can override the base URL
-  baseUrl: 'http://localhost:3000',
+  baseUrl: 'https://app.untamper.com',
 });
 
 async function basicUsage() {
   try {
-    // Log a simple user action
+    // Step 1: Health check
+    console.log('Checking API health...');
+    const health = await client.logs.healthCheck();
+    console.log('✓ API is healthy:', health.message);
+    console.log('  Version:', health.version);
+    console.log('  Timestamp:', health.timestamp);
+    console.log('');
+
+    // Step 2: Log a simple user action
+    console.log('Ingesting audit log...');
     const response = await client.logs.ingestLog({
       action: 'user.login',
       actor: {
@@ -31,12 +40,24 @@ async function basicUsage() {
       },
     });
 
-    console.log('Log ingested successfully:', response);
-    console.log('Ingest ID:', response.ingestId);
+    console.log('✓ Log ingested successfully');
+    console.log('  Ingest ID:', response.data?.ingestId);
+    console.log('  Status:', response.data?.status);
+    console.log('  Processing time:', response.processingTime);
+    console.log('');
 
-    // Check the status of the ingestion
-    const status = await client.logs.checkIngestionStatus(response.ingestId!);
-    console.log('Ingestion status:', status);
+    // Step 3: Check the status of the ingestion
+    console.log('Checking ingestion status...');
+    const status = await client.logs.checkIngestionStatus(response.data?.ingestId!);
+    console.log('✓ Ingestion status:', status.status);
+    console.log('  Attempts:', status.attempts);
+    console.log('  Created at:', status.createdAt);
+    if (status.processedAt) {
+      console.log('  Processed at:', status.processedAt);
+    }
+    if (status.error) {
+      console.log('  Error:', status.error);
+    }
 
   } catch (error) {
     console.error('Error ingesting log:', error);

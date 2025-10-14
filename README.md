@@ -296,25 +296,28 @@ const isValid = verifyECDSASignature(hash, signature, publicKey);
 
 **Note**: The `computeLogHash` function uses deterministic JSON stringification, ensuring consistent hashes regardless of object property order.
 
-### Queue Management
+### Health Check
 
-#### `client.queue.getQueueStats()`
+#### `client.logs.healthCheck()`
 
-Gets queue statistics.
+Performs a health check on the ingestion API. This endpoint does not require authentication and can be used to verify that the unTamper API is available and responding.
 
 ```typescript
-const stats = await client.queue.getQueueStats();
-console.log('Total items:', stats.data?.total);
-console.log('By status:', stats.data?.byStatus);
+const health = await client.logs.healthCheck();
+console.log('API is healthy:', health.success);
+console.log('Message:', health.message);
+console.log('Version:', health.version);
+console.log('Timestamp:', health.timestamp);
 ```
 
-#### `client.queue.triggerQueueProcessing()`
-
-Triggers manual queue processing.
-
+**Response:**
 ```typescript
-const result = await client.queue.triggerQueueProcessing();
-console.log('Processing triggered:', result.message);
+{
+  success: true,
+  message: "unTamper Ingestion API is healthy",
+  version: "1.0.0",
+  timestamp: "2024-01-02T10:30:00Z"
+}
 ```
 
 ## Error Handling
@@ -367,7 +370,7 @@ import {
   ActionResult,
   AuditLog,
   QueryLogsResponse,
-  VerifyLogResponse,
+  VerifyLogResult,
 } from '@untamper/sdk-node';
 
 const request: LogIngestionRequest = {
@@ -383,7 +386,7 @@ const request: LogIngestionRequest = {
 // Type-safe responses
 const response: LogIngestionResponse = await client.logs.ingestLog(request);
 const logs: QueryLogsResponse = await client.logs.queryLogs();
-const verification: VerifyLogResponse = await client.verification.verifyLog('log_123');
+const verification: VerifyLogResult = await client.verification.verifyLog(logs.logs[0]);
 ```
 
 ## Examples
@@ -399,10 +402,14 @@ const client = new UnTamperClient({
 });
 
 async function completeAuditWorkflow() {
-  // Initialize client (fetch public key for verification)
+  // 0. Health check
+  const health = await client.logs.healthCheck();
+  console.log('API is healthy:', health.message);
+  
+  // 1. Initialize client (fetch public key for verification)
   await client.initialize();
   
-  // 1. Ingest an audit log
+  // 2. Ingest an audit log
   const ingestResponse = await client.logs.ingestLog({
     action: 'user.login',
     actor: {
@@ -423,10 +430,10 @@ async function completeAuditWorkflow() {
   
   console.log('Log ingested:', ingestResponse.data?.ingestId);
   
-  // 2. Wait for processing to complete
+  // 3. Wait for processing to complete
   await new Promise(resolve => setTimeout(resolve, 2000));
   
-  // 3. Query logs to find the ingested log
+  // 4. Query logs to find the ingested log
   const queryResponse = await client.logs.queryLogs({
     action: 'user.login',
     actorId: 'user_123',
@@ -439,13 +446,13 @@ async function completeAuditWorkflow() {
   console.log('Hash:', log.hash);
   console.log('Previous hash:', log.previousHash);
   
-  // 4. Verify the log's cryptographic integrity (client-side)
+  // 5. Verify the log's cryptographic integrity (client-side)
   const verification = await client.verification.verifyLog(log);
   console.log('Log is valid:', verification.valid);
   console.log('Hash valid:', verification.hashValid);
   console.log('Signature valid:', verification.signatureValid);
   
-  // 5. Verify multiple logs with chain validation
+  // 6. Verify multiple logs with chain validation
   const multipleLogs = await client.logs.queryLogs({ limit: 10 });
   const chainVerification = await client.verification.verifyLogs(multipleLogs.logs);
   

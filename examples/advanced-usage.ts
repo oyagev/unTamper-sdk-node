@@ -1,4 +1,13 @@
-import { UnTamperClient, UnTamperError, ValidationError } from '@untamper/sdk-node';
+import { 
+  UnTamperClient, 
+  UnTamperError, 
+  ValidationError,
+  AuthenticationError,
+  NetworkError,
+  RateLimitError,
+  ServerError,
+  ConfigurationError
+} from '../src';
 
 // Initialize the client with custom configuration
 const client = new UnTamperClient({
@@ -12,7 +21,15 @@ const client = new UnTamperClient({
 
 async function advancedUsage() {
   try {
-    // Batch log multiple events
+    // Step 1: Health check
+    console.log('Checking API health...');
+    const health = await client.logs.healthCheck();
+    console.log('✓ API is healthy:', health.message);
+    console.log('  Version:', health.version);
+    console.log('');
+
+    // Step 2: Batch log multiple events
+    console.log('Batch ingesting multiple logs...');
     const logs = [
       {
         action: 'document.create',
@@ -79,30 +96,35 @@ async function advancedUsage() {
 
     // Ingest all logs in parallel
     const responses = await client.logs.ingestLogs(logs);
-    console.log('Batch ingestion completed:', responses.length, 'logs processed');
+    console.log('✓ Batch ingestion completed:', responses.length, 'logs processed');
 
     // Wait for all ingestions to complete
     const statusPromises = responses.map(response => 
-      client.logs.waitForCompletion(response.ingestId!, {
+      client.logs.waitForCompletion(response.data?.ingestId!, {
         pollInterval: 500, // Check every 500ms
         maxWaitTime: 10000, // Wait up to 10 seconds
       })
     );
 
     const statuses = await Promise.all(statusPromises);
-    console.log('All ingestions completed:', statuses.map(s => s.status));
+    console.log('✓ All ingestions completed:', statuses.map(s => s.status));
 
-    // Get queue statistics
-    const queueStats = await client.queue.getQueueStats();
-    console.log('Queue statistics:', queueStats);
-
-    // Trigger manual queue processing
-    const processResult = await client.queue.triggerQueueProcessing();
-    console.log('Queue processing triggered:', processResult);
+    // All logs processed successfully
+    console.log('✓ All batch operations completed successfully');
 
   } catch (error) {
     if (error instanceof ValidationError) {
       console.error('Validation error:', error.message, error.details);
+    } else if (error instanceof AuthenticationError) {
+      console.error('Authentication error:', error.message, error.statusCode);
+    } else if (error instanceof NetworkError) {
+      console.error('Network error:', error.message, error.code);
+    } else if (error instanceof RateLimitError) {
+      console.error('Rate limit error:', error.message, error.retryAfter);
+    } else if (error instanceof ServerError) {
+      console.error('Server error:', error.message, error.statusCode);
+    } else if (error instanceof ConfigurationError) {
+      console.error('Configuration error:', error.message);
     } else if (error instanceof UnTamperError) {
       console.error('unTamper error:', error.message, error.code, error.statusCode);
     } else {

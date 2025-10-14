@@ -19,7 +19,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:example": "ts-node --project tsconfig.node.json examples/simple-test.ts",
+    "test:example": "ts-node --project tsconfig.node.json examples/basic-usage.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",

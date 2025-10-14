@@ -1,5 +1,5 @@
 import express from 'express';
-import { UnTamperClient } from '@untamper/sdk-node';
+import { UnTamperClient } from '../src';
 
 // Initialize the client
 const client = new UnTamperClient({
@@ -7,6 +7,19 @@ const client = new UnTamperClient({
   apiKey: 'your-api-key',
   baseUrl: 'http://localhost:3000', // For development
 });
+
+// Health check function for startup verification
+async function checkAPIHealth() {
+  try {
+    const health = await client.logs.healthCheck();
+    console.log('✓ unTamper API is healthy:', health.message);
+    console.log('  Version:', health.version);
+    return true;
+  } catch (error) {
+    console.error('❌ unTamper API health check failed:', error);
+    return false;
+  }
+}
 
 // Express middleware for automatic audit logging
 function auditLogMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -106,7 +119,19 @@ app.use((error: Error, req: express.Request, res: express.Response, next: expres
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log('Audit logging is enabled for all requests');
-});
+
+// Start server with health check
+async function startServer() {
+  // Check API health before starting
+  const isHealthy = await checkAPIHealth();
+  if (!isHealthy) {
+    console.log('⚠️  Warning: unTamper API is not healthy, but continuing to start server...');
+  }
+  
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log('Audit logging is enabled for all requests');
+  });
+}
+
+startServer();

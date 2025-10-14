@@ -11,7 +11,6 @@ describe('UnTamperClient', () => {
 
       expect(client).toBeInstanceOf(UnTamperClient);
       expect(client.logs).toBeDefined();
-      expect(client.queue).toBeDefined();
     });
 
     it('should throw ConfigurationError for missing projectId', () => {

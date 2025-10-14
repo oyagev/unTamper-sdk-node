@@ -54,37 +54,6 @@ export interface IngestionStatusResponse {
   updatedAt: string;
 }
 
-/**
- * Queue statistics data
- */
-export interface QueueStatsData {
-  /** Total number of items in the queue */
-  total: number;
-  /** Count of items by status */
-  byStatus: Record<string, number>;
-}
-
-/**
- * Queue statistics response
- */
-export interface QueueStatsResponse {
-  /** Whether the request was successful */
-  success: boolean;
-  /** Queue statistics data */
-  data?: QueueStatsData;
-}
-
-/**
- * Queue management response
- */
-export interface QueueManagementResponse {
-  /** Whether the request was successful */
-  success: boolean;
-  /** Response message */
-  message: string;
-  /** Queue statistics data (when action is "stats") */
-  data?: QueueStatsData;
-}
 
 /**
  * Error response

@@ -23,8 +23,6 @@ export type {
 export type {
   LogIngestionResponse,
   IngestionStatusResponse,
-  QueueStatsResponse,
-  QueueManagementResponse,
   ErrorResponse,
   AuditLog,
   LogContext,

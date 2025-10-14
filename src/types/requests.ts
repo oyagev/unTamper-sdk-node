@@ -65,13 +65,6 @@ export interface LogIngestionRequest {
   metadata?: Record<string, any>;
 }
 
-/**
- * Queue management request
- */
-export interface QueueManagementRequest {
-  /** The action to perform */
-  action: 'process' | 'stats';
-}
 
 /**
  * Query logs request options
